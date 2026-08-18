@@ -1,0 +1,72 @@
+python MustEnergyMonitor.py read -p /dev/ttyUSB0 
+2026-08-18 14:49:16.189  INFO    scanning for device id 0x04 on 1 port(s) [probe 04 03 4E 21 00 05 C2 BE]
+2026-08-18 14:49:16.194  INFO    opened /dev/ttyUSB0 @ 19200 baud (8N1, RTS)
+2026-08-18 14:49:16.196  INFO    opened /dev/ttyUSB0 @ 19200 baud (8N1, RTS)
+2026-08-18 14:49:18.401  INFO    closed /dev/ttyUSB0
+2026-08-18 14:49:18.401  INFO    scanning for device id 0x05 on 1 port(s) [probe 05 03 4E 21 00 05 C3 6F]
+2026-08-18 14:49:18.406  INFO    opened /dev/ttyUSB0 @ 19200 baud (8N1, RTS)
+2026-08-18 14:49:18.407  INFO    opened /dev/ttyUSB0 @ 19200 baud (8N1, RTS)
+2026-08-18 14:49:20.612  INFO    closed /dev/ttyUSB0
+2026-08-18 14:49:20.613  INFO    scanning for device id 0x06 on 1 port(s) [probe 06 03 4E 21 00 05 C3 5C]
+2026-08-18 14:49:20.618  INFO    opened /dev/ttyUSB0 @ 19200 baud (8N1, RTS)
+2026-08-18 14:49:20.621  INFO    opened /dev/ttyUSB0 @ 19200 baud (8N1, RTS)
+2026-08-18 14:49:22.825  INFO    closed /dev/ttyUSB0
+2026-08-18 14:49:22.826  WARNING scan: no responding device found
+2026-08-18 14:49:22.826  WARNING no scan response; falling back to default unit group (4,4) (5,5) (6,6)
+2026-08-18 14:49:22.830  INFO    opened /dev/ttyUSB0 @ 19200 baud (8N1, RTS)
+2026-08-18 14:49:22.830  INFO    reading unit: charger=0x04 inverter=0x04
+2026-08-18 14:49:25.739  WARNING no response (timeout after 2.0 s)
+2026-08-18 14:49:27.843  WARNING no response (timeout after 2.0 s)
+2026-08-18 14:49:31.951  WARNING no response (timeout after 4.0 s)
+2026-08-18 14:49:31.952  INFO    reading unit: charger=0x05 inverter=0x05
+2026-08-18 14:49:33.956  WARNING no response (timeout after 2.0 s)
+2026-08-18 14:49:33.956  WARNING charger 0x05: identity block unreadable, skipping unit
+2026-08-18 14:49:33.956  INFO    reading unit: charger=0x06 inverter=0x06
+2026-08-18 14:49:35.960  WARNING no response (timeout after 2.0 s)
+2026-08-18 14:49:35.961  WARNING charger 0x06: identity block unreadable, skipping unit
+2026-08-18 14:49:35.961  INFO    closed /dev/ttyUSB0
+
+=== Unit: charger=0x04 inverter=0x04 ===
+  -- Charger identity (0x2711) --
+     machine_type                     = 1800
+     serial_number                    = 00000000
+     hardware_version                 = 1.01.02
+     software_version                 = 8.05.
+     pv_voltage_c                     = 0000
+     battery_voltage_c                = 0000
+     charger_current_c                = 0000
+  -- Charger settings (0x2775) --
+     charger_work_enable              = ON
+     absorb_voltage                   = 12.5
+     float_voltage                    = 13.5
+     absorption_voltage               = 14.2
+     battery_low_voltage              = 8.5
+     battery_high_voltage             = 15
+     max_charger_current              = 60
+     absorb_charger_current           = 10
+     battery_type                     = 2
+     battery_ah                       = 200
+     remove_the_accumulated_data      = 0
+  -- Charger status (0x3B61) --
+     charger_workstate                = Selftest Mode
+     mppt_state                       = Stop
+     charging_state                   = Stop
+     pv_voltage                       = 0 V
+     battery_voltage                  = 13.9 V
+     charger_current                  = 0 A
+     charger_power                    = 0 W
+     radiator_temperature             = 32 ℃
+     external_temperature             = 0 ℃
+     battery_relay                    = Disconnect
+     pv_relay                         = Disconnect
+     batt_vol_grade                   = 12 V
+     rated_current                    = 60 A
+     accumulated_power                = 0.2 KWH
+     accumulated_time                 = 00:00:00
+  -- Inverter identity (0x4E21) --
+  -- Inverter settings (0x4E85) --
+  -- Inverter real-time (0x6271) --
+2026-08-18 14:49:35.963  INFO    unit 0x04/0x04: 1800 SN=00000000 | WorkState= | Charger=Selftest Mode/Stop | PV=0 V Batt=13.9 V I_chg=0 A P_grid= V_inv= I_batt= P_batt=
+2026-08-18 14:49:35.963  WARNING unit 0x05/0x05: no data
+2026-08-18 14:49:35.964  WARNING unit 0x06/0x06: no data
+2026-08-18 14:49:35.964  INFO    read OK: 1/3 unit(s) on /dev/ttyUSB0
