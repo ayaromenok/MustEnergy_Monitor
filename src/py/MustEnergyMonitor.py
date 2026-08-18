@@ -723,7 +723,7 @@ def list_ports() -> list[str]:
 
 
 def scan_ports(ports: list[str] | None = None,
-               device_ids: tuple[int, ...] = (4, 5, 6)) -> list[ScanResult]:
+               device_ids: tuple[int, ...] = (4,)) -> list[ScanResult]:
     """
     For each device id, for each port, send the probe and return the first
     (id, port) that answers.
@@ -983,9 +983,16 @@ def cmd_list(_args) -> int:
     return 0
 
 
+def resolve_ids(args) -> tuple[int, ...]:
+    """Device ids to probe: explicit --ids wins, else --all-ids (4,5,6), else only 4."""
+    if args.ids is not None:
+        return tuple(args.ids)
+    return (4, 5, 6) if args.all_ids else (4,)
+
+
 def cmd_scan(args) -> int:
     ports = [args.port] if args.port else None
-    results = scan_ports(ports, tuple(args.ids))
+    results = scan_ports(ports, resolve_ids(args))
     if not results:
         return 1
     print(f"\n{len(results)} device(s) found:")
@@ -996,7 +1003,7 @@ def cmd_scan(args) -> int:
 
 
 def cmd_read(args) -> int:
-    port, pairs = discover_units(args.port, tuple(args.ids))
+    port, pairs = discover_units(args.port, resolve_ids(args))
     if port is None:
         log.error("no device found on any port")
         return 1
@@ -1023,7 +1030,7 @@ def cmd_read(args) -> int:
 
 
 def cmd_monitor(args) -> int:
-    port, pairs = discover_units(args.port, tuple(args.ids))
+    port, pairs = discover_units(args.port, resolve_ids(args))
     if port is None:
         log.error("no device found on any port")
         return 1
@@ -1052,7 +1059,7 @@ def cmd_monitor(args) -> int:
                         log.error("device lost after %d failed polls; rescanning",
                                   fail_streak)
                         fail_streak = 0
-                        port, pairs = discover_units(port, tuple(args.ids))
+                        port, pairs = discover_units(port, resolve_ids(args))
                         if port is None:
                             return 1
             except Exception as e:
@@ -1115,19 +1122,25 @@ def main(argv: list[str] | None = None) -> int:
     p = sub.add_parser("scan", help="scan for connected devices")
     p.add_argument("-p", "--port", help="only scan this port (default: all)")
     p.add_argument("--ids", type=lambda s: [int(x, 0) for x in s.split(",")],
-                   default=[4, 5, 6], help="device ids to probe (default 4,5,6)")
+                   default=None, help="device ids to probe (default: only 4)")
+    p.add_argument("--all-ids", action="store_true",
+                   help="also probe ids 5 and 6 (i.e. 4,5,6)")
     p.set_defaults(func=cmd_scan)
 
     p = sub.add_parser("read", help="one-shot full read of all units")
     p.add_argument("-p", "--port", help="serial port (default: scan all ports)")
     p.add_argument("--ids", type=lambda s: [int(x, 0) for x in s.split(",")],
-                   default=[4, 5, 6], help="scan probe ids (default 4,5,6)")
+                   default=None, help="scan probe ids (default: only 4)")
+    p.add_argument("--all-ids", action="store_true",
+                   help="also probe ids 5 and 6 (i.e. 4,5,6)")
     p.set_defaults(func=cmd_read)
 
     p = sub.add_parser("monitor", help="continuously poll and log to the terminal")
     p.add_argument("-p", "--port", help="serial port (default: scan all ports)")
     p.add_argument("--ids", type=lambda s: [int(x, 0) for x in s.split(",")],
-                   default=[4, 5, 6], help="scan probe ids (default 4,5,6)")
+                   default=None, help="scan probe ids (default: only 4)")
+    p.add_argument("--all-ids", action="store_true",
+                   help="also probe ids 5 and 6 (i.e. 4,5,6)")
     p.add_argument("--interval", type=float, default=3.0,
                    help="poll interval seconds (default 3)")
     p.add_argument("--dump", dest="verbose_dump", action="store_true",
