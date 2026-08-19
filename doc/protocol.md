@@ -2,6 +2,7 @@
 
 > The sources describe **Modbus RTU** communication with solar power equipment:
 > PV chargers, hybrid inverters (PV + battery + grid) and grid-tie inverters.
+> Version 2.2.81
 
 ---
 
