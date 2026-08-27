@@ -180,19 +180,21 @@ Every monitored property is annotated:
 
 ---
 
-## 3. 1.04.14 Hybrid Inverters — Ph1800M, Cdy10414M, Ep180010414M
+## 3. 1.04.14 Hybrid Inverters — Ph1800M, Cdy10414M, Ep180010414M, PV1800 (MustPower)
 
 | Protocol type | Baudrate | Device ID | Scan start |
 |---|---|---|---|
 | `Ph18Series` | 19200 | 4 | 20000 |
 
-These three models share the same register map. Differences:
+These models share the same register map. Differences:
 * **Cdy10414M** — full inverter + charger (all registers), standard edition 1.04.14,
   displays "Recommended version" if mismatch.
 * **Ep180010414M** — inverter + charger settings only; **no** charger status registers
   (15201–15221) or charger errors.
 * **Ph1800M** — full inverter + charger, includes charger serial number parsing and
   accumulated time.
+* **PV1800 (MustPower)** — full inverter + charger, edition 1.04.14. Field-verified
+  2026-08-27 on a live unit, slave ID 4 @ 19200 8N1 (see §3.12).
 
 ### 3.1 Inverter Identity (registers 20000–20008)
 
@@ -389,6 +391,140 @@ These three models share the same register map. Differences:
 | Bit | Meaning |
 |---|---|
 | 0 | Fan error |
+
+### 3.12 Field-verified capture — MustPower PV1800 (`doc/com_port_log.csv`)
+
+Live bus capture of a working PV1800 inverter, recorded 2026-08-27 13:42:53–13:43:06
+(~13 s) with a Windows serial-port monitor on COM3 while
+`C:\Program Files (x86)\CC\SolarPowerMonitor\SolarMonitor.exe` polled the bus.
+All 13 response frames have valid Modbus RTU CRC16. The capture is read-only
+(FC 03 only, no writes).
+
+**Verified parameters**
+
+| Item | Value |
+|---|---|
+| Device | MustPower PV1800 hybrid inverter |
+| Protocol | `Ph18Series`, edition 1.04.14 (reg 20006 / 25278 = 10414) |
+| Slave ID | 4 |
+| Baudrate | 19200 |
+| Frame format | 8 data bits, no parity, 1 stop bit (8N1) |
+| Function code | 03 (read holding registers) only |
+| Machine type | 20000 = 0x5056 ("PV"), 20001 = 1800 → "PV1800" |
+| Serial number | 20002/20003 = 0xFFFF (not set on this unit) |
+| HW / SW version | 20004 = 10101 (1.01.01), 20005 = 4905 (4.90.5) |
+
+**Discovery round** (repeats every ~2 s; probes the factory defaults of all five
+protocol types on the same bus — §1.1. Only slave 4 answers):
+
+| # | Frame (hex) | Target | Result |
+|---|---|---|---|
+| 1 | `01 03 27 10 00 01 8F 7B` | slave 1, 10000 ×1 (`Pc1800`) | no response |
+| 2 | `05 03 4E 21 00 01 C2 AC` | slave 5, 20001 ×1 (`Ph1000`) | no response |
+| 3 | `06 03 4E 21 00 01 C2 9F` | slave 6, 20001 ×1 (`Ph5000`) | no response |
+| 4 | `0A 03 75 30 00 01 9F 72` | slave 10, 30000 ×1 (`EPSeries`) | no response |
+| 5 | `04 03 4E 20 00 07 12 BF` | slave 4, 20000 ×7 (`Ph18Series`, `ScanFieldCnt=7`) | **response** |
+
+**Detailed polling** (starts after first detection, 13:42:58):
+
+| Step | Frame (hex) | Block | Regs |
+|---|---|---|---|
+| 1 | `04 03 27 11 00 08 1E E8` | charger identity (10001) | 8 |
+| 2 | `04 03 27 77 00 0A 7F 36` | charger settings (10103) | 10 |
+| 3 | `04 03 3B 61 00 15 D8 AA` | charger status (15201) | 21 |
+| 4 | `04 03 4E 20 00 11 93 71` | inverter identity + calibration (20000) | 17 |
+| 5 | `04 03 4E 85 00 2B 03 41` | inverter settings (20101) | 43 |
+| 6 | `04 03 62 71 00 4F 4B C8` | inverter status (25201) | 79 |
+
+After the initial full pass the host loops steps 3 and 6 only, alternating
+charger status and inverter status every ~2 s.
+
+**Sample snapshot** (first detailed pass, 13:42:58–13:43:01; device in
+**OffGrid** state, 12 V battery, no grid, no PV):
+
+| Addr | Name | Raw | Value |
+|---|---|---|---|
+| 25201 | WorkStateNo | 2 | OffGrid |
+| 25202 | AcVoltageGrade | 230 | 230 V |
+| 25203 | RatedPower | 1500 | 1500 VA |
+| 25205 | BatteryVoltage | 126 | 12.6 V |
+| 25206 | InverterVoltage | 2300 | 230.0 V |
+| 25207 | GridVoltage | 0 | 0.0 V |
+| 25208 | BusVoltage | 4630 | see note 1 |
+| 25209 | ControlCurrent | 4 | 0.4 A |
+| 25213 | PInverter | 32 | 32 W |
+| 25215 | PLoad | 12 | 12 W |
+| 25217 | SInverter | 100 | ≈100 VA (live 93–100) |
+| 25221 | Qinverter | 99 | live 93–97 |
+| 25223 | Qload | 102 | live 93–100 |
+| 25225 | InverterFrequency | 5000 | 50.00 Hz |
+| 25233 | AcRadiatorTemp | 60 | 60 °C |
+| 25235 | DcRadiatorTemp | 76 | 76 °C |
+| 25237 | InverterRelayStateNo | 1 | Connect |
+| 25238 | GridRelayStateNo | 0 | Disconnect |
+| 25239 | LoadRelayStateNo | 1 | Connect |
+| 25241 | DcRelayStateNo | 1 | Connect |
+| 25247/25248 | AccumulatedDischargerPower H/L | 0/14 | 1.4 kWh |
+| 25253/25254 | AccumulatedLoadPower H/L | 0/156 | 15.6 kWh |
+| 25255/25256 | AccumulatedSelfusePower H/L | 0/14 | 1.4 kWh |
+| 25261–25266 | Error1/2, Warning1/2 | 0 | no inverter faults |
+| 25273 | BattPower | 20 | 20 W |
+| 25274 | BattCurrent | 1 | 1 A |
+| 25275 | BattVoltageGrade | 12 | 12 V |
+| 25277 | RatedPowerW | 1500 | 1500 W |
+| 25279 | ArrowFlag | 166 (0xA6) | load+batt connected, load current on, batt-current dir = 2 (see note 3) |
+
+Charger side: work state 1 (Selftest), MPPT/charge stopped, battery 12.5 V
+(15206), radiator 44 °C (15209), battery grade 12 V (15215), rated 60.0 A
+(15216), PV energy 2.0 kWh (15217/15218 = 2/0), charger fault bitmask
+15213 = 32 → bit 5 "PV voltage is too low" (consistent with PV relay
+15212 = 0 and PV voltage 15205 = 0).
+
+Charger settings in effect: float 13.5 V (10103), absorption 13.5 V (10104),
+low 8.5 V (10105), max current 60.0 A (10108), battery type 2 (10110),
+200 Ah (10111). Inverter settings in effect: output 230.0 V / 50.00 Hz
+(20102/20103), off-grid enable (20101 = 1), energy mode 3 (20109),
+grid protect standard 2 (20111), max discharge 6.6 A (20113),
+stop-discharge 11.5 V (20118), stop-charge 14.2 V (20119), grid-charge max
+20.0 A (20125), battery low/high 11.0 / 15.0 V (20127/20128), combined
+charge 60.0 A (20132), system setting 114 = 0x72 (20142: OverTempRestartForbid,
+OverLoadBypassForbid, BuzzForbid, LcdLightEnable), source priority
+solar+utility (20143 = 2).
+
+**Notes**
+
+1. **BusVoltage scaling** — reg 25208 reads 4629–4631 raw while the inverter
+   outputs 230.0 V. Interpreted as ×1 (§3.4) the value would be ~4630 V,
+   implausible; ×0.1 gives ≈463.0 V, a plausible DC-bus level. The live data
+   is consistent with ×0.1 scaling; the §3.4 table (coeff 1) may be wrong.
+2. **Undocumented registers observed** (read in the capture, not in §3.1–3.7):
+
+   | Addr | Raw | Observation |
+   |---|---|---|
+   | 10106 | 85 | equals 10105 (low voltage 8.5 V) |
+   | 10107 | 150 | equals 20128 (battery high 15.0 V) |
+   | 10109 | 100 | unknown |
+   | 20105–20107 | 1/1/1 | unknown enables |
+   | 20114 | 66 | equals 20113 (max discharge 6.6 A) |
+   | 20117 | 113 | unknown |
+   | 20121–20124 | 125/135/135/12 | 20122/20123 equal float/absorption (13.5 V) |
+   | 20126 | 200 | equals 20125 (grid-charge max 20.0 A) |
+   | 20129–20131 | 2/200/115 | unknown |
+   | 25269/25270 | 0xFFFF | unknown |
+   | 25271 | 10101 | mirrors 20004 (HW version) |
+   | 25272 | 4905 | mirrors 20005 (SW version) |
+
+3. **Arrow flag** (25279 = 0xA6 = bits 1, 2, 5, 7): with the §3.4 bit layout
+   (bit0 PV conn, bit1 load conn, bit2 batt conn, bit3 AC conn, bit4 PV current,
+   bit5 load current, bits 6–7 batt current dir, bits 8–9 AC current dir) this
+   decodes as load + battery connected, load current flowing, battery-current
+   direction code 2 — consistent with the OffGrid discharging state.
+4. **Live registers** — only 25208, 25217, 25221, 25223 changed across the four
+   repeated inverter-status reads (13:43:01–13:43:06); all other registers were
+   stable.
+5. **Port configuration** set by the host: 19200 8N1, read/write/interbyte
+   timeouts 0xFFFFFFFF (infinite), read-interval timeout 65534 ms, in-queue 256
+   bytes, out-queue 2048 bytes.
 
 ---
 

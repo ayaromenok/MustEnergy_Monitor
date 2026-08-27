@@ -34,15 +34,12 @@ class ModbusRTUClient:
 
     # ------------------------------------------------------------------
     def connect(self) -> None:
-        parity_map = {"N": "None", "E": "Even", "O": "Odd"}
-        stop_map = {1: "One", 2: "Two"}
         self._client = ModbusSerialClient(
-            method="rtu",
             port=self._port,
             baudrate=self._baudrate,
             bytesize=self._bytesize,
-            parity=parity_map.get(self._parity, "None"),
-            stopbits=stop_map.get(self._stopbits, "One"),
+            parity=self._parity,
+            stopbits=self._stopbits,
             timeout=self._timeout,
         )
         if not self._client.connect():
@@ -67,7 +64,7 @@ class ModbusRTUClient:
     ) -> list[int]:
         """Read *count* holding registers from *device_id*."""
         resp = self._client.read_holding_registers(
-            address=start, count=count, slave=device_id
+            address=start, count=count, device_id=device_id
         )
         if resp.isError():
             raise ModbusException(
@@ -104,7 +101,7 @@ class ModbusRTUClient:
     ) -> None:
         """Write a single holding register."""
         resp = self._client.write_register(
-            address=address, value=value, slave=device_id
+            address=address, value=value, device_id=device_id
         )
         if resp.isError():
             raise ModbusException(
@@ -118,7 +115,7 @@ class ModbusRTUClient:
     ) -> None:
         """Write consecutive holding registers."""
         resp = self._client.write_registers(
-            address=address, values=values, slave=device_id
+            address=address, values=values, device_id=device_id
         )
         if resp.isError():
             raise ModbusException(

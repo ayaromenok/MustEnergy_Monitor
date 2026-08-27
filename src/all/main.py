@@ -6,7 +6,7 @@ import argparse
 import json
 import logging
 import sys
-from typing import Optional
+from typing import Any, Optional
 
 try:
     from .modbus_client import ModbusRTUClient
@@ -63,7 +63,7 @@ def resolve_device(
     if device_name is None:
         device_name = "ep2000pro"
     dev = DEVICE_REGISTRY[device_name]
-    return dev, device_id
+    return dev, device_id or dev.default_device_id
 
 
 def cmd_read(args: argparse.Namespace) -> int:
